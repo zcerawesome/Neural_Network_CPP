@@ -24,6 +24,7 @@ std::vector<std::vector<float>> loadCSV(std::string fileName, bool header=true)
     if(header)
         getline(file, line);
     int i = 0;
+    
     while(getline(file, line) && i < 1000)
     {
         std::vector<float> row;
