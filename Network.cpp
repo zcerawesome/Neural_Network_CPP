@@ -50,7 +50,7 @@ vec(matrice<float>) Network::forward(matrice<float>& X)
     return output;
 }
 
-vec(matrice<float>) Network::backward_prop(vec(matrice<float>) forward, matrice<float>& X, matrice<float>& Y)
+vec(matrice<float>) Network::backward_prop(vec(matrice<float>)& forward, matrice<float>& X, matrice<float>& Y)
 {
     int col = Y.getNumCols();
     auto one_hot_encode_y = one_hot_encode(Y);
@@ -67,7 +67,7 @@ vec(matrice<float>) Network::backward_prop(vec(matrice<float>) forward, matrice<
         if(i == 0)
             results[i * 2] = not_results[i].dot(X.transpose()) / col;
         else
-            results[i * 2] = not_results[i].dot(forward[i * 2 + 1].transpose()) / col;
+            results[i * 2] = not_results[i].dot(forward[i * 2 - 1].transpose()) / col;
         results[i * 2 + 1].matrix = {{not_results[i].sum() / col}};
         results[i * 2 + 1].update();
     }
@@ -75,7 +75,7 @@ vec(matrice<float>) Network::backward_prop(vec(matrice<float>) forward, matrice<
 }
 
 
-void Network::update_params(vec(matrice<float>) back_prop, float alpha)
+void Network::update_params(vec(matrice<float>)& back_prop, float alpha)
 {
     for(int i = 0; i < back_prop.size()/2; i++)
     {

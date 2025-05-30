@@ -16,8 +16,8 @@ public:
     void applyRandomzation(int layer);
     matrice<float> one_hot_encode(matrice<float>& y);
     vec(matrice<float>) forward(matrice<float>& X);
-    vec(matrice<float>) backward_prop(vec(matrice<float>) forward, matrice<float>& X, matrice<float>& Y);
-    void update_params(vec(matrice<float>) back_prop, float alpha);
+    vec(matrice<float>) backward_prop(vec(matrice<float>)& forward, matrice<float>& X, matrice<float>& Y);
+    void update_params(vec(matrice<float>)& back_prop, float alpha);
 };
 
 #include "Network.cpp"
