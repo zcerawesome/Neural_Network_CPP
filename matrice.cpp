@@ -211,7 +211,7 @@ void matrice<T>::operator=(std::vector<std::vector<T>>& inp)
 }
 
 template <typename T>
-void matrice<T>::operator=(matrice<T> inp)
+void matrice<T>::operator=(const matrice<T>& inp)
 {
     matrix = inp.matrix;
     update();
@@ -241,9 +241,8 @@ void matrice<T>::operator=(matrice<T>& inp)
     matrix = inp.matrix;
     update();
 }
-
 template <typename T>
-matrice<T> matrice<T>::non_dot_product(const matrice<T>& inp)
+matrice<T> matrice<T>::operator*(const matrice<T>& inp)
 {
     if(row != inp.row || col != inp.col)
     {
@@ -256,22 +255,45 @@ matrice<T> matrice<T>::non_dot_product(const matrice<T>& inp)
     return temp;
 }
 
-template <typename T>
-matrice<T> matrice<T>::non_dot_product(matrice<T>& inp)
-{
-    if(row != inp.row || col != inp.col)
-    {
-        std::cerr << "Error invalid dimensions for non dot product" << std::endl;
-    }
-    matrice<T> temp(row, col);
-    for(int i = 0; i < row; i++)
-        for(int j = 0; j < col; j++)
-            temp[i][j] = matrix[i][j] * inp[i][j];
-    return temp;
-}
 
 template <typename T>
 matrice<T> matrice<T>::operator*(matrice<T>& inp)
+{
+    if(row != inp.row || col != inp.col)
+    {
+        std::cerr << "Error invalid dimensions for non dot product" << std::endl;
+    }
+    matrice<T> temp(row, col);
+    for(int i = 0; i < row; i++)
+        for(int j = 0; j < col; j++)
+            temp[i][j] = matrix[i][j] * inp[i][j];
+    return temp;
+}
+
+template <typename T>
+matrice<T> matrice<T>::dot(const matrice<T>& inp)
+{
+    if(col != inp.row)
+    {
+        std::cerr << "Error invalid dimensions for matrice multiplication" << std::endl;
+    }
+    matrice<T> temp(row, inp.col);
+    for(int i = 0; i < row; i++)
+    {
+        std::vector<T>& row_val = temp[i];
+        for(int j = 0; j < inp[0].size(); j++)
+        {
+            T& value = row_val[j];
+            value = 0;
+            for(int k = 0; k < col; k++)
+                value += matrix[i][k] * inp[k][j];
+        }
+    }
+    return temp;
+}
+
+template <typename T>
+matrice<T> matrice<T>::dot(matrice<T>& inp)
 {
     if(col != inp.row)
     {
@@ -303,23 +325,21 @@ matrice<T> matrice<T>::operator-(const matrice<T>& inp)
 }
 
 template <typename T>
-matrice<T> matrice<T>::operator*(const matrice<T>& inp)
+T matrice<T>::sum()
 {
-    if(col != inp.row)
-    {
-        std::cerr << "Error invalid dimensions for matrice multiplication" << std::endl;
-    }
-    matrice<T> temp(row, inp.col);
-    for(int i = 0; i < row; i++)
-    {
-        std::vector<T>& row_val = temp[i];
-        for(int j = 0; j < inp[0].size(); j++)
-        {
-            T& value = row_val[j];
-            value = 0;
-            for(int k = 0; k < col; k++)
-                value += matrix[i][k] * inp[k][j];
-        }
-    }
-    return temp;
+    T total = 0;
+    for(auto& rows: matrix)
+        for(auto& cols: rows)
+            total += cols;
+    return total;
+}
+
+template <typename T>
+T matrice<T>::max()
+{
+    T max = matrix[0][0];
+    for(auto& rows: matrix)
+        for(auto& cols: rows)
+           max = cols > max ? cols: max;
+    return max;
 }

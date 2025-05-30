@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include "Network.h"
 #define vec(X) std::vector<X>
 #define vec2D(X) std::vector<std::vector<X>>
 
@@ -24,7 +25,6 @@ std::vector<std::vector<float>> loadCSV(std::string fileName, bool header=true)
     if(header)
         getline(file, line);
     int i = 0;
-    
     while(getline(file, line) && i < 1000)
     {
         std::vector<float> row;
@@ -46,12 +46,11 @@ float randomFloat()
     return (float)rand() / RAND_MAX;
 }
 
-template <typename T>
-void randomize_matrix(matrice<T>& inp)
+void randomize_matrix(matrice<float>& inp)
 {
     for(auto& rows: inp.matrix)
         for(auto& col: rows)
-            col = randomFloat();
+            col = randomFloat() - 0.5;
 }
 
 matrice<float> ReLU(matrice<float>& inp)
@@ -72,8 +71,9 @@ matrice<float> ReLU_derive(matrice<float>& inp)
     return temp;
 }
 
-void softmax(matrice<float>& inp, matrice<float>& temp)
+matrice<float> softmax(matrice<float>& inp)
 {
+    matrice<float> temp(inp.getNumRows(), inp.getNumCols());
     for(int j = 0; j < temp.getNumCols(); j++)
     {
         float sum = 0;
@@ -87,6 +87,7 @@ void softmax(matrice<float>& inp, matrice<float>& temp)
             temp[i][j] /= sum;
         }
     }
+    return temp;
 }
 
 vec(matrice<float>) init_params()
@@ -99,10 +100,6 @@ vec(matrice<float>) init_params()
     randomize_matrix(b1);
     randomize_matrix(W2);
     randomize_matrix(b2);
-    W1 = W1 - 0.5;
-    b1 = b1 - 0.5;
-    W2 = W2 - 0.5;
-    b2 = b2 - 0.5;
     return {W1, b1, W2, b2};
 }
 
@@ -112,8 +109,7 @@ vec(matrice<float>) forward_prop(matrice<float>& W1, matrice<float>& b1, matrice
     auto A1 = ReLU(Z1);
 
     auto Z2 = W2 * A1 + b2;
-    matrice<float> A2(Z2.getNumRows(), Z2.getNumCols());
-    softmax(Z2, A2);
+    auto A2 = softmax(Z2);
     return {Z1, A1, Z2, A2};
 }
 
@@ -143,7 +139,7 @@ vec(matrice<float>) backward_prop(matrice<float>& Z1, matrice<float>& A1, matric
     auto db2 = 1 / cols * sum(dZ2);
     matrice<float> dB2(1,1);
     dB2[0][0] = db2;
-    auto dZ1 = (W2.transpose() * dZ2).non_dot_product(ReLU_derive(Z1));
+    auto dZ1 = (W2.transpose() * dZ2).dot(ReLU_derive(Z1));
     auto dW1 = dZ1 * X.transpose() / cols;
     auto db1 = 1 / cols * sum(dZ1);
     matrice<float> dB1(1,1);
@@ -171,6 +167,15 @@ int largest_index(matrice<float>& input)
 
 int main()
 { 
+    Network n;
+    n.addLayer(784, 0, 0);
+    n.addLayer(10, ReLU, ReLU_derive);
+    n.addLayer(10, softmax, 0);
+
+    n.setRandomization(randomize_matrix);
+    n.applyRandomzation(1);
+    n.applyRandomzation(2);
+    
     srand(time(0)+45);
     {
         // vec2D(float) ting({{0,1,2,3}, {0,1,2,3}, {4, 5, 6,7 }, {8, 9, 10, 11}});
@@ -205,6 +210,31 @@ int main()
     X_train = X_train / 255.0;
     matrice<float> Y_train = Train.getRows(0,1);
 
+    for(int i = 0; i < 500; i++)
+    {
+        vec(matrice<float>) results = n.forward(X_train);
+        vec(matrice<float>) dds = n.backward_prop(results, X_train, Y_train);
+        n.update_params(dds, .01);
+        if((i+1) % 10 == 0)
+            std::cout << "Iteration: " << (i + 1) << std::endl;
+    }
+    std::ofstream file("Result.txt");
+    int num_correct = 0;
+    for(int j = 0; j < 200; j++)
+    {
+        matrice<float> x(784, 1);
+        for(int i = 0; i < 784; i++)
+            x[i][0] = X_train[i][j];
+        vec(matrice<float>) pred = n.forward(x);
+        file << "Prediction # " << (j + 1) << std::endl;
+        file << largest_index(pred[3]) << std::endl;
+        file << Y_train[0][j] << std::endl;
+        if(largest_index(pred[3]) == Y_train[0][j])
+            num_correct++;
+    }
+    file.close();
+    std::cout << "Accuracy: " << (float)num_correct / 200 << std::endl;
+    return 0;
     vec(matrice<float>) params = init_params();
     
     for(int i = 0; i < 500; i++)
@@ -216,20 +246,20 @@ int main()
             std::cout << "Iteration: " << (i + 1) << std::endl;
     }
 
-    std::ofstream file("Result.txt");
-    int num_correct = 0;
-    for(int j = 0; j < 200; j++)
-    {
-        matrice<float> x(784, 1);
-        for(int i = 0; i < 784; i++)
-            x[i][0] = X_train[i][j];
-        vec(matrice<float>) pred = forward_prop(params[0], params[1], params[2], params[3], x);
-        file << "Prediction # " << (j + 1) << std::endl;
-        file << largest_index(pred[3]) << std::endl;
-        file << Y_train[0][j] << std::endl;
-        if(largest_index(pred[3]) == Y_train[0][j])
-            num_correct++;
-    }
-    file.close();
-    std::cout << "Accuracy: " << (float)num_correct / 200 << std::endl;
+    // std::ofstream file("Result.txt");
+    // int num_correct = 0;
+    // for(int j = 0; j < 200; j++)
+    // {
+    //     matrice<float> x(784, 1);
+    //     for(int i = 0; i < 784; i++)
+    //         x[i][0] = X_train[i][j];
+    //     vec(matrice<float>) pred = forward_prop(params[0], params[1], params[2], params[3], x);
+    //     file << "Prediction # " << (j + 1) << std::endl;
+    //     file << largest_index(pred[3]) << std::endl;
+    //     file << Y_train[0][j] << std::endl;
+    //     if(largest_index(pred[3]) == Y_train[0][j])
+    //         num_correct++;
+    // }
+    // file.close();
+    // std::cout << "Accuracy: " << (float)num_correct / 200 << std::endl;
 }

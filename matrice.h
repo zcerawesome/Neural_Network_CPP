@@ -32,17 +32,18 @@ public:
     matrice<T> operator*(T inp);
     matrice<T> operator+(matrice<T>& inp);
     void operator=(matrice<T>& inp);
-    void operator=(matrice<T> inp);
+    void operator=(const matrice<T>& inp);
     void operator=(std::vector<std::vector<T>>& inp);
     void operator=(std::vector<T>& inp);
     void update();
     matrice<T> operator-(const matrice<T>& inp);
     matrice<T> operator*(matrice<T>& inp);
-    matrice<T> non_dot_product(matrice<T>& inp);
-    matrice<T> non_dot_product(const matrice<T>& inp);
+    matrice<T> dot(matrice<T>& inp);
+    matrice<T> dot(const matrice<T>& inp);
     matrice<T> operator*(const matrice<T>& inp);
     matrice<T> transpose();
-    
+    T sum();
+    T max();
 };
 
 #include "matrice.cpp"
